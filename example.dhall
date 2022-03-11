@@ -9,6 +9,7 @@ in      conf
               , "simple-json"
               , "either"
               , "variant"
+              , "filterable"
               , "foldable-traversable"
               , "arrays"
               , "transformers"

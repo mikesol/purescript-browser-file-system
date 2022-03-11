@@ -186,9 +186,9 @@ instance FileSystemHandle FileSystemDirectoryHandle where
 data FileSystemDirectoryHandle
 
 foreign import showDirectoryPicker_
-  :: Effect (Promise (Array FileSystemDirectoryHandle))
+  :: Effect (Promise FileSystemDirectoryHandle)
 
-showDirectoryPicker :: Aff (Array FileSystemDirectoryHandle)
+showDirectoryPicker :: Aff FileSystemDirectoryHandle
 showDirectoryPicker = toAffE showDirectoryPicker_
 
 data FD = File FileSystemFileHandle | Directory FileSystemDirectoryHandle

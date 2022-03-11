@@ -88,12 +88,22 @@ exports.getFile_ = function (fsh) {
 	};
 };
 
-exports.createWritable_ = function (makeFSFH) {
+exports.entries_ = function (makeFSFH) {
 	return function (makeFSDH) {
 		return function (makeTP) {
 			return function (fsh) {
 				return function () {
-					return fsh.createWritable().then(function (res) {
+					var itr = fsh.entries();
+					var loopMe = function (x, arr) {
+						return x.next().then(function (res) {
+							if (res.done) {
+								return arr;
+							} else {
+								return loopMe(x, arr.concat([res.value]));
+							}
+						})
+					}
+					return loopMe(itr, []).then(function (res) {
 						var o = [];
 						for (var i = 0; i < res.length; i++) {
 							o.push(
@@ -104,6 +114,7 @@ exports.createWritable_ = function (makeFSFH) {
 								)
 							);
 						}
+						return Promise.resolve(o);
 					});
 				};
 			};
@@ -111,9 +122,9 @@ exports.createWritable_ = function (makeFSFH) {
 	};
 };
 
-exports.entries_ = function (fsh) {
+exports.createWritable_ = function (fsh) {
 	return function () {
-		return fsh.entries();
+		return fsh.createWritable();
 	};
 };
 
