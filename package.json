@@ -1,0 +1,13 @@
+{
+  "name": "purescript-browser-file-system",
+  "version": "0.0.0",
+  "description": "Need the browser file system? We've got you (partially) covered.",
+  "keywords": [],
+  "author": "Mike Solomon",
+  "license": "ISC",
+  "devDependencies": {
+    "purescript": "^0.14.7",
+    "purs-tidy": "^0.7.1",
+    "spago": "^0.20.7"
+  }
+}
