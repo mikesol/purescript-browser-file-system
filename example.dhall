@@ -4,7 +4,8 @@ in      conf
     //  { sources = conf.sources # [ "example/**/*.purs" ]
         , dependencies =
               conf.dependencies
-            # [ "halogen"
+            # [ "aff"
+              ,"halogen"
               , "halogen-storybook"
               , "simple-json"
               , "either"

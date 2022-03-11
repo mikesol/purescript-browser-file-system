@@ -8,6 +8,7 @@ import Data.Either (Either(..))
 import Data.Filterable (filterMap)
 import Data.Maybe (Maybe(..))
 import Data.Traversable (traverse)
+import Data.Tuple (snd)
 import Data.Tuple.Nested ((/\))
 import Data.Variant (inj, match)
 import Effect (Effect)
@@ -15,7 +16,6 @@ import Effect.Aff (Aff, makeAff, parallel, sequential)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception (Error)
-import Foreign.Object (values)
 import Foreign.Object as Object
 import Halogen as H
 import Halogen.Aff as HA
@@ -27,6 +27,11 @@ import Type.Proxy (Proxy(..))
 import Web.File.File (toBlob)
 import Web.File.FileReader (FileReader, fileReader, readAsText, result)
 import Web.HTML.Window.FileSystem (FD(..), entries, getFile, getFileHandle, showDirectoryPicker, showOpenFilePicker)
+
+afz :: forall a. ((Error -> Effect Unit) -> (a -> Effect Unit) -> Effect Unit) -> Aff a
+afz i = makeAff \f -> do
+  i (Left >>> f) (Right >>> f)
+  mempty
 
 foreign import waitTillDone_
   :: (Error -> Effect Unit)
@@ -58,10 +63,10 @@ component0 multiple =
         { handleAction = match
             { selectFile: \(_ :: Unit) -> do
                 txts <- H.liftAff do
-                  fsh <- showOpenFilePicker { multiple }
+                  fsh <- afz $ showOpenFilePicker { multiple }
                   sequential
                     ( fsh # traverse \ff -> parallel do
-                        f <- getFile ff
+                        f <- afz $ getFile ff
                         r <- liftEffect fileReader
                         liftEffect $ readAsText (toBlob f) r
                         waitTillDone r
@@ -90,18 +95,18 @@ component1 =
         { handleAction = match
             { selectDir: \(_ :: Unit) -> do
                 txts <- H.liftAff do
-                  fsh <- showDirectoryPicker
-                  e <- entries fsh
+                  fsh <- afz showDirectoryPicker
+                  e <- afz $ entries fsh
                   let
                     vals = filterMap
                       ( case _ of
                           File f -> Just f
                           _ -> Nothing
                       )
-                      (values e)
+                      (map snd e)
                   sequential
                     ( vals # traverse \ff -> parallel do
-                        f <- getFile ff
+                        f <- afz $ getFile ff
                         r <- liftEffect fileReader
                         liftEffect $ readAsText (toBlob f) r
                         waitTillDone r
@@ -131,9 +136,9 @@ component2 =
         { handleAction = match
             { selectDir: \(_ :: Unit) -> do
                 txt <- H.liftAff do
-                  fsh <- showDirectoryPicker
-                  ff <- getFileHandle fsh "hello.txt" { create: false }
-                  f <- getFile ff
+                  fsh <- afz showDirectoryPicker
+                  ff <- afz $ getFileHandle fsh "hello.txt" { create: false }
+                  f <- afz $ getFile ff
                   r <- liftEffect fileReader
                   liftEffect $ readAsText (toBlob f) r
                   waitTillDone r
