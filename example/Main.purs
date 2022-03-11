@@ -26,7 +26,7 @@ import Simple.JSON (writeJSON)
 import Type.Proxy (Proxy(..))
 import Web.File.File (toBlob)
 import Web.File.FileReader (FileReader, fileReader, readAsText, result)
-import Web.HTML.Window.FileSystem (FD(..), entries, getFile, showDirectoryPicker, showOpenFilePicker)
+import Web.HTML.Window.FileSystem (FD(..), entries, getFile, getFileHandle, showDirectoryPicker, showOpenFilePicker)
 
 foreign import waitTillDone_
   :: (Error -> Effect Unit)
@@ -113,12 +113,43 @@ component1 =
         }
     }
 
+component2
+  :: forall query input output m
+   . MonadEffect m
+  => MonadAff m
+  => H.Component query input output m
+component2 =
+  H.mkComponent
+    { initialState: \_ -> { file: Nothing }
+    , render: \{ file } -> case file of
+        Nothing -> HH.button
+          [ HE.onClick (const $ inj (Proxy :: _ "selectDir") unit) ]
+          [ HH.text "Select directory" ]
+
+        Just f -> HH.div_ [ HH.text f ]
+    , eval: H.mkEval $ H.defaultEval
+        { handleAction = match
+            { selectDir: \(_ :: Unit) -> do
+                txt <- H.liftAff do
+                  fsh <- showDirectoryPicker
+                  ff <- getFileHandle fsh "hello.txt" { create: false }
+                  f <- getFile ff
+                  r <- liftEffect fileReader
+                  liftEffect $ readAsText (toBlob f) r
+                  waitTillDone r
+                  liftEffect (writeJSON <$> result r)
+                H.modify_ _ { file = Just txt }
+            }
+        }
+    }
+
 stories
   :: forall m. MonadEffect m => MonadAff m => MonadThrow Error m => Stories m
 stories = Object.fromFoldable
   [ "pick file" /\ (proxy $ component0 false)
   , "pick files" /\ (proxy $ component0 true)
   , "pick directory" /\ proxy component1
+  , "get file handle" /\ proxy component2
   ]
 
 main :: Effect Unit
